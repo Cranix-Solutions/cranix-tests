@@ -5,7 +5,7 @@ DESTDIR         = /
 SHARE           = $(DESTDIR)/usr/share/cranix/tests
 TOPACKAGE       = bin datas helper tests datas Makefile README.md
 HERE            = $(shell pwd)
-REPO            = /data1/OSC/home:varkoly:CRANIX-4-2:leap15.2
+REPO            = /data1/OSC/home:pvarkoly:CRANIX
 PACKAGE         = cranix-tests
 
 install:

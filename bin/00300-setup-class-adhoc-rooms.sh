@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #
-sed -i 's/CRANIX_MAINTAIN_ADHOC_ROOM_FOR_CLASSES=*/CRANIX_MAINTAIN_ADHOC_ROOM_FOR_CLASSES="yes"/' /etc/sysconfig/cranix
-sed -i 's/CRANIX_CLASS_ADHOC_DEVICE_PRO_USER=*/CRANIX_CLASS_ADHOC_DEVICE_PRO_USER="2"/' /etc/sysconfig/cranix
-sed -i 's/CRANIX_CLASS_ADHOC_DEVICE_COUNT=*/CRANIX_CLASS_ADHOC_DEVICE_COUNT="32"/' /etc/sysconfig/cranix
+sed -i 's/CRANIX_MAINTAIN_ADHOC_ROOM_FOR_CLASSES=.*/CRANIX_MAINTAIN_ADHOC_ROOM_FOR_CLASSES="yes"/' /etc/sysconfig/cranix
+sed -i 's/CRANIX_CLASS_ADHOC_DEVICE_PRO_USER=.*/CRANIX_CLASS_ADHOC_DEVICE_PRO_USER="2"/' /etc/sysconfig/cranix
+sed -i 's/CRANIX_CLASS_ADHOC_DEVICE_COUNT=.*/CRANIX_CLASS_ADHOC_DEVICE_COUNT="32"/' /etc/sysconfig/cranix
 
 #Create AdHocLan Rooms for classes
 /usr/share/cranix/tools/handle_class_adhoc_rooms.py
