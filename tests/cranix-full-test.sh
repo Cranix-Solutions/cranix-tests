@@ -1,6 +1,9 @@
 #!/bin/bash
 
 source /etc/sysconfig/cranix
+if [ -e ~/cranix-tests ]; then
+	source ~/cranix-tests
+fi
 export TEST_BASE="/usr/share/cranix/tests"
 export TEST_BIN="${TEST_BASE}/bin"
 export TEST_HELPER="${TEST_BASE}/helper"
