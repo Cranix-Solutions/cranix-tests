@@ -19,8 +19,16 @@ import re
 import tempfile
 import threading
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
+
+try:
+    from http.server import ThreadingHTTPServer
+except ImportError:  # Python < 3.7
+    from socketserver import ThreadingMixIn
+
+    class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+        daemon_threads = True
 
 from plan_parser import build_plan
 
