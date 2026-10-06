@@ -224,7 +224,15 @@
     return { statuses: statuses, tier1: tier1 };
   }
 
+  function applyI18n() {
+    document.querySelectorAll("[data-i18n]").forEach(function (node) {
+      node.textContent = t(node.getAttribute("data-i18n"));
+    });
+  }
+
   function render() {
+    el.langSelect.value = lang;
+    applyI18n();
     el.planMeta.textContent = t("planMeta").replace("{n}", plan ? plan.cases.length : 0);
     document.title = t("appTitle");
     document.documentElement.lang = lang;

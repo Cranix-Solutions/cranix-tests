@@ -98,6 +98,11 @@ code {
   flex-wrap: wrap;
 }
 
+.topbar .select {
+  color: var(--text);
+  background: #fff;
+}
+
 .export-group {
   display: flex;
   gap: 6px;
