@@ -387,12 +387,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._serve_static(path[len("/static/"):])
         if path == "/favicon.ico":
             return self._send(204, b"", "image/x-icon")
-        if path == "/api/health":
+        if path == "/testapi/health":
             return self._json(200, {"status": "ok", "time": _now()})
-        if path == "/api/plan":
+        if path == "/testapi/plan":
             return self._json(200, self.config.plan())
 
-        run_match = re.match(r"^/api/runs/([^/]+)(/export)?$", path)
+        run_match = re.match(r"^/testapi/runs/([^/]+)(/export)?$", path)
         if run_match:
             run_id = _safe_id(run_match.group(1))
             if not run_id:
@@ -404,7 +404,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._error(404, "run not found")
             return self._json(200, run)
 
-        if path == "/api/runs":
+        if path == "/testapi/runs":
             return self._json(200, _list_runs(self.config))
         return self._error(404, "not found")
 
@@ -413,7 +413,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = unquote(urlparse(self.path).path)
-        if path != "/api/runs":
+        if path != "/testapi/runs":
             return self._error(404, "not found")
         body = self._read_body()
         if body is None:
@@ -434,7 +434,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         path = unquote(urlparse(self.path).path)
-        run_match = re.match(r"^/api/runs/([^/]+)$", path)
+        run_match = re.match(r"^/testapi/runs/([^/]+)$", path)
         if not run_match:
             return self._error(404, "not found")
         run_id = _safe_id(run_match.group(1))
@@ -460,7 +460,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         path = unquote(urlparse(self.path).path)
-        run_match = re.match(r"^/api/runs/([^/]+)$", path)
+        run_match = re.match(r"^/testapi/runs/([^/]+)$", path)
         if not run_match:
             return self._error(404, "not found")
         run_id = _safe_id(run_match.group(1))

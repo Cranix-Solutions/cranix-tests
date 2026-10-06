@@ -1,24 +1,41 @@
 # Example Apache reverse proxy for the CRANIX QA Test Result Collector.
 #
-# The collector serves its assets from absolute paths (/static/..., /api/...),
-# so proxy it on its own hostname rather than under a sub-path.
+# The frontend uses relative URLs (testapi/..., static/...), so the collector can
+# be mounted either under a sub-path of an existing host (e.g. the CRANIX admin
+# host) or on a dedicated hostname. The trailing-slash proxy form strips the
+# /cranix-testcollector/ prefix before the request reaches the collector.
 #
 # 1. Copy this file to /etc/apache2/conf.d/cranix-testcollector.conf
-# 2. Adjust ServerName to a name that resolves to the test server.
-# 3. Allow the network the testers use and reload Apache:
+# 2. Adjust the ServerName and the network you allow.
+# 3. Reload Apache:
 #       a2enmod proxy proxy_http
 #       systemctl reload apache2
 
-<VirtualHost *:80>
-    ServerName cranix-testcollector.example.org
+# --- Option A: sub-path on an existing host (recommended) -------------------
+<VirtualHost *:443>
+    ServerName admin.example.org
 
     ProxyPreserveHost On
-    ProxyPass        / http://127.0.0.1:8765/
-    ProxyPassReverse / http://127.0.0.1:8765/
+    ProxyPass        /cranix-testcollector/ http://127.0.0.1:8765/
+    ProxyPassReverse /cranix-testcollector/ http://127.0.0.1:8765/
 
-    <Location />
+    <Location /cranix-testcollector/>
         Require ip 127.0.0.1
         # Allow the school network, e.g.:
         # Require ip 10.0.0.0/8
     </Location>
 </VirtualHost>
+
+# --- Option B: dedicated hostname -------------------------------------------
+# <VirtualHost *:443>
+#     ServerName cranix-testcollector.example.org
+#
+#     ProxyPreserveHost On
+#     ProxyPass        / http://127.0.0.1:8765/
+#     ProxyPassReverse / http://127.0.0.1:8765/
+#
+#     <Location />
+#         Require ip 127.0.0.1
+#         # Require ip 10.0.0.0/8
+#     </Location>
+# </VirtualHost>

@@ -618,7 +618,7 @@
 
   function saveRun() {
     if (!run) return Promise.resolve();
-    return api("/api/runs/" + encodeURIComponent(run.id), {
+    return api("testapi/runs/" + encodeURIComponent(run.id), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -640,14 +640,14 @@
   }
 
   function refreshRuns() {
-    return api("/api/runs").then(function (list) {
+    return api("testapi/runs").then(function (list) {
       runs = list || [];
       renderRunPanel();
     });
   }
 
   function openRun(id) {
-    return api("/api/runs/" + encodeURIComponent(id)).then(function (data) {
+    return api("testapi/runs/" + encodeURIComponent(id)).then(function (data) {
       run = data;
       run.environment = run.environment || {};
       run.results = run.results || {};
@@ -659,7 +659,7 @@
   function createRun() {
     var name = window.prompt(t("namePrompt"), "");
     if (name === null) return;
-    api("/api/runs", {
+    api("testapi/runs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tester: name.trim(), language: lang })
@@ -673,7 +673,7 @@
   function deleteRun() {
     if (!run) return;
     if (!window.confirm(t("confirmDelete"))) return;
-    api("/api/runs/" + encodeURIComponent(run.id), { method: "DELETE" }).then(function () {
+    api("testapi/runs/" + encodeURIComponent(run.id), { method: "DELETE" }).then(function () {
       run = null;
       return refreshRuns().then(function () {
         if (runs.length) return openRun(runs[0].id);
@@ -686,7 +686,7 @@
     if (!run) return;
     var link = document.createElement("a");
     link.href =
-      "/api/runs/" +
+      "testapi/runs/" +
       encodeURIComponent(run.id) +
       "/export?format=" +
       encodeURIComponent(format) +
@@ -707,7 +707,7 @@
         toast(t("importError"));
         return;
       }
-      api("/api/runs", {
+      api("testapi/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -829,7 +829,7 @@
   function init() {
     lang = localStorage.getItem("ck-lang") || "en";
     el.langSelect.value = lang;
-    api("/api/plan")
+    api("testapi/plan")
       .then(function (data) {
         plan = data;
         return refreshRuns();
