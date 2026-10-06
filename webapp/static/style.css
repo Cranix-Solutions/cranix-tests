@@ -103,6 +103,73 @@ code {
   background: #fff;
 }
 
+.user-box {
+  font-size: 13px;
+  color: #dbe6f2;
+  padding: 0 4px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(160deg, #0f2740, #1d6fb8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.login-overlay[hidden] {
+  display: none;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  padding: 30px 32px 26px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-card .logo.big {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+  margin-bottom: 14px;
+  color: #fff;
+}
+
+.login-card h2 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.login-card .field-label {
+  margin-top: 12px;
+}
+
+.login-card .btn.wide {
+  margin-top: 18px;
+  width: 100%;
+}
+
+.login-error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fbe6e6;
+  color: #9c2b2b;
+  font-size: 13px;
+}
+
 .export-group {
   display: flex;
   gap: 6px;

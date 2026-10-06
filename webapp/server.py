@@ -8,6 +8,7 @@ checklist and stores every test run as a JSON file.
 Usage:
     python3 server.py [--host 127.0.0.1] [--port 8765]
                       [--plan-dir DIR] [--results-dir DIR]
+                      [--api-url URL] [--acl NAME]
 """
 
 import argparse
@@ -16,11 +17,16 @@ import io
 import json
 import os
 import re
+import secrets
 import tempfile
 import threading
+import time
 from datetime import datetime, timezone
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.error import HTTPError, URLError
+from urllib.parse import parse_qs, quote, unquote, urlparse
+from urllib.request import Request, urlopen
 
 try:
     from http.server import ThreadingHTTPServer
@@ -52,11 +58,28 @@ _write_lock = threading.Lock()
 
 
 class Config:
-    def __init__(self, plan_dir, results_dir, static_dir):
+    def __init__(
+        self,
+        plan_dir,
+        results_dir,
+        static_dir,
+        api_url="http://127.0.0.1:9080",
+        acl="qatest.manage",
+        cookie_name="ck_testcollector",
+        session_ttl=28800,
+        secure_cookie=False,
+    ):
         self.plan_dir = plan_dir
         self.results_dir = results_dir
         self.static_dir = static_dir
         self.index_file = os.path.join(static_dir, os.pardir, "index.html")
+        self.api_url = api_url.rstrip("/")
+        self.acl = acl
+        self.cookie_name = cookie_name
+        self.session_ttl = session_ttl
+        self.secure_cookie = secure_cookie
+        self.sessions = {}
+        self.sessions_lock = threading.Lock()
         self._plan = None
         self._plan_stamp = None
 
@@ -71,6 +94,41 @@ class Config:
             self._plan = build_plan(en, de)
             self._plan_stamp = stamp
         return self._plan
+
+
+def _api_call(config, method, path, payload=None, token=None, timeout=10):
+    """Call the CRANIX REST API. Returns (status_code, json_or_none)."""
+    url = config.api_url + path
+    data = None
+    headers = {"Accept": "application/json"}
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    request = Request(url, data=data, headers=headers, method=method)
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            raw = response.read().decode("utf-8")
+            try:
+                return response.status, json.loads(raw)
+            except ValueError:
+                return response.status, None
+    except HTTPError as error:
+        try:
+            return error.code, json.loads(error.read().decode("utf-8"))
+        except (ValueError, OSError):
+            return error.code, None
+    except (URLError, OSError):
+        return 0, None
+
+
+def _prune_sessions(config, now):
+    expiry = now - config.session_ttl
+    with config.sessions_lock:
+        for sid in [s for s, data in config.sessions.items() if data["lastSeen"] < expiry]:
+            config.sessions.pop(sid, None)
+
 
 
 def _now():
@@ -346,19 +404,28 @@ def _render_csv(config, run, lang):
 class Handler(BaseHTTPRequestHandler):
     config = None
 
-    def _send(self, status, body, content_type="application/json; charset=utf-8"):
+    def _send(
+        self, status, body, content_type="application/json; charset=utf-8", extra_headers=None
+    ):
         if isinstance(body, str):
             body = body.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for key, value in extra_headers or []:
+            self.send_header(key, value)
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
 
-    def _json(self, status, payload):
-        self._send(status, json.dumps(payload, ensure_ascii=False))
+    def _json(self, status, payload, extra_headers=None):
+        self._send(
+            status,
+            json.dumps(payload, ensure_ascii=False),
+            "application/json; charset=utf-8",
+            extra_headers,
+        )
 
     def _error(self, status, message):
         self._json(status, {"error": message})
@@ -372,6 +439,155 @@ class Handler(BaseHTTPRequestHandler):
             return json.loads(raw.decode("utf-8"))
         except ValueError:
             return None
+
+    def _get_cookie(self, name):
+        raw = self.headers.get("Cookie")
+        if not raw:
+            return None
+        try:
+            jar = SimpleCookie()
+            jar.load(raw)
+        except Exception:
+            return None
+        return jar[name].value if name in jar else None
+
+    def _cookie_header(self, value, max_age):
+        parts = [
+            "{}={}".format(self.config.cookie_name, value),
+            "Path=/",
+            "HttpOnly",
+            "SameSite=Lax",
+            "Max-Age={}".format(max_age),
+        ]
+        if self.config.secure_cookie:
+            parts.append("Secure")
+        return [("Set-Cookie", "; ".join(parts))]
+
+    def _user_payload(self, session):
+        return {
+            "username": session.get("uid", ""),
+            "fullName": session.get("fullName", ""),
+            "role": session.get("role", ""),
+            "acls": session.get("acls", []),
+        }
+
+    def _drop_session(self, sid):
+        with self.config.sessions_lock:
+            self.config.sessions.pop(sid, None)
+
+    def _authenticate(self):
+        sid = self._get_cookie(self.config.cookie_name)
+        if not sid:
+            return None
+        now = time.time()
+        _prune_sessions(self.config, now)
+        with self.config.sessions_lock:
+            session = self.config.sessions.get(sid)
+        if session is None:
+            return None
+        if now - session["lastSeen"] > self.config.session_ttl:
+            self._drop_session(sid)
+            return None
+        if now - session.get("validated", 0) > 60:
+            status, data = _api_call(
+                self.config,
+                "GET",
+                "/sessions/byToken/" + quote(session["token"], safe=""),
+                token=session["token"],
+            )
+            if status != 200 or not data:
+                self._drop_session(sid)
+                return None
+            session["acls"] = data.get("acls", session.get("acls", []))
+            session["fullName"] = data.get("fullName", session.get("fullName", ""))
+            session["validated"] = now
+        session["lastSeen"] = now
+        return session
+
+    def _require_auth(self):
+        session = self._authenticate()
+        if session is None:
+            self._error(401, "authentication required")
+            return None
+        if self.config.acl not in session.get("acls", []):
+            self._error(403, "missing ACL " + self.config.acl)
+            return None
+        return session
+
+    def _handle_session(self):
+        session = self._require_auth()
+        if session is None:
+            return
+        return self._json(200, self._user_payload(session))
+
+    def _handle_login(self):
+        body = self._read_body()
+        if body is None:
+            return self._error(400, "invalid json")
+        username = str(body.get("username", "")).strip()
+        password = str(body.get("password", ""))
+        if not username or not password:
+            return self._error(400, "username and password are required")
+        status, data = _api_call(
+            self.config,
+            "POST",
+            "/sessions/create",
+            {"username": username, "password": password},
+        )
+        if status == 0:
+            return self._error(502, "cannot reach the CRANIX API")
+        if status != 200 or not data or not data.get("token"):
+            return self._error(401, "invalid username or password")
+        token = data["token"]
+        acls = data.get("acls") or []
+        if data.get("mustChange"):
+            _api_call(
+                self.config,
+                "DELETE",
+                "/sessions/" + quote(token, safe=""),
+                token=token,
+            )
+            return self._error(403, "password change required")
+        if self.config.acl not in acls:
+            _api_call(
+                self.config,
+                "DELETE",
+                "/sessions/" + quote(token, safe=""),
+                token=token,
+            )
+            return self._error(403, "missing ACL " + self.config.acl)
+        now = time.time()
+        sid = secrets.token_urlsafe(32)
+        session = {
+            "token": token,
+            "uid": data.get("name") or username,
+            "fullName": data.get("fullName") or username,
+            "role": data.get("role", ""),
+            "acls": acls,
+            "created": now,
+            "lastSeen": now,
+            "validated": now,
+        }
+        with self.config.sessions_lock:
+            self.config.sessions[sid] = session
+        return self._json(
+            200, self._user_payload(session), self._cookie_header(sid, self.config.session_ttl)
+        )
+
+    def _handle_logout(self):
+        sid = self._get_cookie(self.config.cookie_name)
+        session = None
+        if sid:
+            with self.config.sessions_lock:
+                session = self.config.sessions.pop(sid, None)
+        if session:
+            _api_call(
+                self.config,
+                "DELETE",
+                "/sessions/" + quote(session["token"], safe=""),
+                token=session["token"],
+            )
+        return self._json(200, {"ok": True}, self._cookie_header("", 0))
 
     def log_message(self, fmt, *args):
         print("[%s] %s" % (self.log_date_time_string(), fmt % args))
@@ -389,7 +605,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(204, b"", "image/x-icon")
         if path == "/testapi/health":
             return self._json(200, {"status": "ok", "time": _now()})
+        if path == "/testapi/session":
+            return self._handle_session()
         if path == "/testapi/plan":
+            if self._require_auth() is None:
+                return
             return self._json(200, self.config.plan())
 
         run_match = re.match(r"^/testapi/runs/([^/]+)(/export)?$", path)
@@ -397,6 +617,8 @@ class Handler(BaseHTTPRequestHandler):
             run_id = _safe_id(run_match.group(1))
             if not run_id:
                 return self._error(400, "invalid run id")
+            if self._require_auth() is None:
+                return
             if run_match.group(2):
                 return self._export(run_id, query)
             run = self._load_run(run_id)
@@ -405,6 +627,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, run)
 
         if path == "/testapi/runs":
+            if self._require_auth() is None:
+                return
             return self._json(200, _list_runs(self.config))
         return self._error(404, "not found")
 
@@ -413,8 +637,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = unquote(urlparse(self.path).path)
+        if path == "/testapi/login":
+            return self._handle_login()
+        if path == "/testapi/logout":
+            return self._handle_logout()
         if path != "/testapi/runs":
             return self._error(404, "not found")
+        if self._require_auth() is None:
+            return
         body = self._read_body()
         if body is None:
             return self._error(400, "invalid json")
@@ -437,6 +667,8 @@ class Handler(BaseHTTPRequestHandler):
         run_match = re.match(r"^/testapi/runs/([^/]+)$", path)
         if not run_match:
             return self._error(404, "not found")
+        if self._require_auth() is None:
+            return
         run_id = _safe_id(run_match.group(1))
         if not run_id:
             return self._error(400, "invalid run id")
@@ -463,6 +695,8 @@ class Handler(BaseHTTPRequestHandler):
         run_match = re.match(r"^/testapi/runs/([^/]+)$", path)
         if not run_match:
             return self._error(404, "not found")
+        if self._require_auth() is None:
+            return
         run_id = _safe_id(run_match.group(1))
         if not run_id:
             return self._error(400, "invalid run id")
@@ -552,16 +786,52 @@ def main():
             "CK_TESTCOLLECTOR_STATIC_DIR", os.path.join(HERE, "static")
         ),
     )
+    parser.add_argument(
+        "--api-url",
+        default=os.environ.get("CK_TESTCOLLECTOR_API_URL", "http://127.0.0.1:9080"),
+    )
+    parser.add_argument(
+        "--acl",
+        default=os.environ.get("CK_TESTCOLLECTOR_ACL", "qatest.manage"),
+    )
+    parser.add_argument(
+        "--cookie-name",
+        default=os.environ.get("CK_TESTCOLLECTOR_COOKIE", "ck_testcollector"),
+    )
+    parser.add_argument(
+        "--session-ttl",
+        type=int,
+        default=int(os.environ.get("CK_TESTCOLLECTOR_SESSION_TTL", "28800")),
+    )
+    parser.add_argument(
+        "--secure-cookie",
+        action="store_true",
+        default=os.environ.get("CK_TESTCOLLECTOR_SECURE_COOKIE", "") == "yes",
+    )
     args = parser.parse_args()
 
-    config = Config(args.plan_dir, args.results_dir, args.static_dir)
+    config = Config(
+        args.plan_dir,
+        args.results_dir,
+        args.static_dir,
+        api_url=args.api_url,
+        acl=args.acl,
+        cookie_name=args.cookie_name,
+        session_ttl=args.session_ttl,
+        secure_cookie=args.secure_cookie,
+    )
     Handler.config = config
 
     os.makedirs(config.results_dir, exist_ok=True)
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     print(
-        "CRANIX QA test collector on http://{}:{}/ (plan: {}, results: {})".format(
-            args.host, args.port, config.plan_dir, config.results_dir
+        "CRANIX QA test collector on http://{}:{}/ (plan: {}, results: {}, api: {}, acl: {})".format(
+            args.host,
+            args.port,
+            config.plan_dir,
+            config.results_dir,
+            config.api_url,
+            config.acl,
         )
     )
     try:

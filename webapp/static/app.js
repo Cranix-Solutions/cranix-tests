@@ -55,7 +55,19 @@
       status_pass: "Pass",
       status_fail: "Fail",
       status_na: "N/A",
-      status_notrun: "Not run"
+      status_notrun: "Not run",
+      loginTitle: "Sign in",
+      loginSubtitle:
+        "Use your CRANIX account. Access requires the qatest.manage permission.",
+      username: "Username",
+      password: "Password",
+      login: "Sign in",
+      logout: "Logout",
+      badCredentials: "Invalid username or password.",
+      noPermission:
+        "Your account does not have the required permission (qatest.manage).",
+      apiUnreachable: "Cannot reach the CRANIX API.",
+      sessionExpired: "Your session has expired. Please sign in again."
     },
     de: {
       appTitle: "CRANIX QA Ergebnis-Erfassung",
@@ -110,7 +122,19 @@
       status_pass: "Bestanden",
       status_fail: "Fehlgeschlagen",
       status_na: "N/A",
-      status_notrun: "Nicht getestet"
+      status_notrun: "Nicht getestet",
+      loginTitle: "Anmelden",
+      loginSubtitle:
+        "Mit dem CRANIX-Konto anmelden. Erforderlich ist die Berechtigung qatest.manage.",
+      username: "Benutzername",
+      password: "Passwort",
+      login: "Anmelden",
+      logout: "Abmelden",
+      badCredentials: "Benutzername oder Passwort ist falsch.",
+      noPermission:
+        "Ihr Konto hat nicht die erforderliche Berechtigung (qatest.manage).",
+      apiUnreachable: "Die CRANIX-API ist nicht erreichbar.",
+      sessionExpired: "Ihre Sitzung ist abgelaufen. Bitte erneut anmelden."
     }
   };
 
@@ -120,6 +144,7 @@
   var plan = null;
   var runs = [];
   var run = null;
+  var currentUser = null;
   var saveTimer = null;
 
   var filters = { tier: "all", group: "all", status: "all", search: "" };
@@ -135,7 +160,15 @@
     envPanel: document.getElementById("envPanel"),
     casesPanel: document.getElementById("casesPanel"),
     content: document.getElementById("content"),
-    toast: document.getElementById("toast")
+    toast: document.getElementById("toast"),
+    loginOverlay: document.getElementById("loginOverlay"),
+    loginForm: document.getElementById("loginForm"),
+    loginUser: document.getElementById("loginUser"),
+    loginPass: document.getElementById("loginPass"),
+    loginError: document.getElementById("loginError"),
+    loginSubmit: document.getElementById("loginSubmit"),
+    logoutBtn: document.getElementById("logoutBtn"),
+    userBox: document.getElementById("userBox")
   };
 
   function t(key) {
@@ -194,19 +227,157 @@
     }, 4000);
   }
 
-  function api(path, options) {
+  function makeError(status, message) {
+    var error = new Error(message);
+    error.status = status;
+    return error;
+  }
+
+  function rawFetch(path, options) {
+    options = options || {};
+    options.credentials = "same-origin";
     return fetch(path, options).then(function (response) {
-      if (!response.ok) {
-        return response
+      var type = response.headers.get("Content-Type") || "";
+      var parse;
+      if (type.indexOf("application/json") !== -1) {
+        parse = response
           .json()
           .catch(function () {
             return {};
-          })
-          .then(function (body) {
-            throw new Error(body.error || "HTTP " + response.status);
+          });
+      } else {
+        parse = response
+          .text()
+          .catch(function () {
+            return "";
           });
       }
-      return response.json();
+      return parse.then(function (body) {
+        return { ok: response.ok, status: response.status, body: body };
+      });
+    });
+  }
+
+  function api(path, options) {
+    return rawFetch(path, options).then(function (response) {
+      if (response.ok) {
+        return response.body;
+      }
+      if (response.status === 401) {
+        showLogin(t("sessionExpired"));
+      }
+      var message =
+        (response.body && response.body.error) || "HTTP " + response.status;
+      throw makeError(response.status, message);
+    });
+  }
+
+  function showLogin(message) {
+    el.loginOverlay.hidden = false;
+    el.userBox.hidden = true;
+    el.logoutBtn.hidden = true;
+    if (message) {
+      el.loginError.textContent = message;
+      el.loginError.hidden = false;
+    } else {
+      el.loginError.hidden = true;
+    }
+    el.loginUser.focus();
+  }
+
+  function hideLogin() {
+    el.loginOverlay.hidden = true;
+    el.loginError.hidden = true;
+  }
+
+  function showApp() {
+    hideLogin();
+    el.userBox.hidden = false;
+    el.userBox.textContent = currentUser
+      ? currentUser.fullName || currentUser.username || ""
+      : "";
+    el.logoutBtn.hidden = false;
+  }
+
+  function checkSession() {
+    return rawFetch("testapi/session")
+      .then(function (response) {
+        if (response.ok && response.body) {
+          currentUser = response.body;
+          showApp();
+          return loadPlan();
+        }
+        showLogin(response.status === 401 ? "" : t("apiUnreachable"));
+      })
+      .catch(function () {
+        showLogin(t("apiUnreachable"));
+      });
+  }
+
+  function loadPlan() {
+    return api("testapi/plan")
+      .then(function (data) {
+        plan = data;
+        return refreshRuns();
+      })
+      .then(function () {
+        if (runs.length) {
+          return openRun(runs[0].id);
+        }
+        render();
+      })
+      .catch(function (error) {
+        if (error.status !== 401) {
+          el.planMeta.textContent = String(error.message || error);
+        }
+      });
+  }
+
+  function doLogin() {
+    var username = el.loginUser.value.trim();
+    var password = el.loginPass.value;
+    if (!username || !password) {
+      return;
+    }
+    el.loginSubmit.disabled = true;
+    rawFetch("testapi/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username, password: password })
+    })
+      .then(function (response) {
+        el.loginSubmit.disabled = false;
+        if (response.status === 200) {
+          currentUser = response.body;
+          el.loginPass.value = "";
+          showApp();
+          loadPlan();
+        } else if (response.status === 401) {
+          showLogin(t("badCredentials"));
+        } else if (response.status === 403) {
+          showLogin((response.body && response.body.error) || t("noPermission"));
+        } else {
+          showLogin((response.body && response.body.error) || t("apiUnreachable"));
+        }
+      })
+      .catch(function () {
+        el.loginSubmit.disabled = false;
+        showLogin(t("apiUnreachable"));
+      });
+  }
+
+  function doLogout() {
+    rawFetch("testapi/logout", { method: "POST" }).then(function () {
+      currentUser = null;
+      run = null;
+      plan = null;
+      runs = [];
+      el.runPanel.innerHTML = "";
+      el.progressPanel.innerHTML = "";
+      el.filterPanel.innerHTML = "";
+      el.envPanel.innerHTML = "";
+      el.casesPanel.innerHTML = "";
+      showLogin("");
     });
   }
 
@@ -736,8 +907,21 @@
     lang = el.langSelect.value;
     localStorage.setItem("ck-lang", lang);
     if (run) run.language = lang;
-    render();
-    if (run) scheduleSave();
+    if (plan) {
+      render();
+      if (run) scheduleSave();
+    } else {
+      applyI18n();
+    }
+  });
+
+  el.loginForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    doLogin();
+  });
+
+  el.logoutBtn.addEventListener("click", function () {
+    doLogout();
   });
 
   el.importBtn.addEventListener("click", function () {
@@ -837,20 +1021,8 @@
   function init() {
     lang = localStorage.getItem("ck-lang") || "en";
     el.langSelect.value = lang;
-    api("testapi/plan")
-      .then(function (data) {
-        plan = data;
-        return refreshRuns();
-      })
-      .then(function () {
-        if (runs.length) {
-          return openRun(runs[0].id);
-        }
-        render();
-      })
-      .catch(function (error) {
-        el.planMeta.textContent = String(error);
-      });
+    applyI18n();
+    checkSession();
   }
 
   init();

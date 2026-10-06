@@ -50,6 +50,31 @@ Installed under `/usr/share/cranix/tests/webapp`, it is started by the
 Use `webapp/apache-cranix-testcollector.conf.example` to expose it to the test
 network. Parser tests: `python3 -m unittest webapp.test_parser`.
 
+### Authentication
+
+The collector uses the CRANIX REST API (`/sessions/create`, `/sessions/byToken`,
+`/sessions/{token}`) like the web app. The CRANIX token is kept server-side; the
+browser only gets an `HttpOnly` session cookie. Only users holding the
+**`qatest.manage`** ACL may sign in; everyone else gets a 403.
+
+Relevant options: `--api-url` (default `http://127.0.0.1:9080`) and `--acl`
+(default `qatest.manage`).
+
+### Creating the qatest.manage ACL (manual)
+
+The ACL is **not** provisioned automatically; create it once on the server where
+the package is installed. For example, to grant it to the administrators group:
+
+```bash
+/usr/sbin/crx_api.sh PUT  system/enumerates/apiAcl/qatest.manage
+/usr/sbin/crx_api.sh POST system/acls/groups/1 \
+    '{"acl":"qatest.manage","allowed":true,"userId":null,"groupId":1}'
+```
+
+Adjust the group id (or use a user id) as needed, or assign it in the web GUI
+under System → ACLs. Users must sign out and in again to pick up the new ACL.
+
+
 ## Install
 
 ```bash

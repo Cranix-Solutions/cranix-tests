@@ -27,8 +27,24 @@
       <button class="btn" data-export="json" data-i18n="exportJson">JSON</button>
       <button class="btn" data-export="csv" data-i18n="exportCsv">CSV</button>
     </div>
+    <span id="userBox" class="user-box" hidden></span>
+    <button id="logoutBtn" class="btn" data-i18n="logout" hidden>Logout</button>
   </div>
 </header>
+
+<div id="loginOverlay" class="login-overlay" hidden>
+  <form id="loginForm" class="login-card" autocomplete="on">
+    <span class="logo big">CRX</span>
+    <h2 data-i18n="loginTitle">Sign in</h2>
+    <p class="muted small" data-i18n="loginSubtitle">Use your CRANIX account.</p>
+    <label class="field-label" for="loginUser" data-i18n="username">Username</label>
+    <input id="loginUser" class="input" autocomplete="username" required>
+    <label class="field-label" for="loginPass" data-i18n="password">Password</label>
+    <input id="loginPass" class="input" type="password" autocomplete="current-password" required>
+    <p id="loginError" class="login-error" hidden></p>
+    <button id="loginSubmit" class="btn primary wide" type="submit" data-i18n="login">Sign in</button>
+  </form>
+</div>
 
 <div class="app">
   <aside class="sidebar">
