@@ -57,7 +57,7 @@ The collector uses the CRANIX REST API (`/sessions/create`, `/sessions/byToken`,
 browser only gets an `HttpOnly` session cookie. Only users holding the
 **`qatest.manage`** ACL may sign in; everyone else gets a 403.
 
-Relevant options: `--api-url` (default `http://127.0.0.1:9080`) and `--acl`
+Relevant options: `--api-url` (default `http://127.0.0.1:9080/api`) and `--acl`
 (default `qatest.manage`).
 
 ### Creating the qatest.manage ACL (manual)

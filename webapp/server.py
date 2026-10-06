@@ -63,7 +63,7 @@ class Config:
         plan_dir,
         results_dir,
         static_dir,
-        api_url="http://127.0.0.1:9080",
+        api_url="http://127.0.0.1:9080/api",
         acl="qatest.manage",
         cookie_name="ck_testcollector",
         session_ttl=28800,
@@ -788,7 +788,9 @@ def main():
     )
     parser.add_argument(
         "--api-url",
-        default=os.environ.get("CK_TESTCOLLECTOR_API_URL", "http://127.0.0.1:9080"),
+        default=os.environ.get(
+            "CK_TESTCOLLECTOR_API_URL", "http://127.0.0.1:9080/api"
+        ),
     )
     parser.add_argument(
         "--acl",
