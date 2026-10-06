@@ -3,17 +3,26 @@
 #
 DESTDIR         = /
 SHARE           = $(DESTDIR)/usr/share/cranix/tests
-TOPACKAGE       = bin datas helper tests datas Makefile README.md
+SYSTEMD         = $(DESTDIR)/usr/lib/systemd/system
+APACHECONF      = $(DESTDIR)/etc/apache2/conf.d
+TOPACKAGE       = bin datas helper tests datas Makefile README.md webapp QA-TESTPLAN.md QA-TESTPLAN.de.md
 HERE            = $(shell pwd)
 REPO            = /data1/OSC/home:pvarkoly:CRANIX
 PACKAGE         = cranix-tests
 
 install:
-	mkdir -p $(SHARE)/{bin,datas,helper,tests}
+	mkdir -p $(SHARE)/{bin,datas,helper,tests,webapp/static}
 	install -m 755   tests/*   $(SHARE)/tests/
 	install -m 755   bin/*     $(SHARE)/bin/
 	install -m 644   datas/*   $(SHARE)/datas/
 	install -m 755   helper/*  $(SHARE)/helper/
+	install -m 644   QA-TESTPLAN.md QA-TESTPLAN.de.md $(SHARE)/
+	install -m 755   webapp/server.py webapp/plan_parser.py $(SHARE)/webapp/
+	install -m 644   webapp/index.html $(SHARE)/webapp/
+	install -m 644   webapp/static/* $(SHARE)/webapp/static/
+	install -d $(SYSTEMD) $(APACHECONF)
+	install -m 644   webapp/cranix-testcollector.service $(SYSTEMD)/
+	install -m 644   webapp/apache-cranix-testcollector.conf.example $(APACHECONF)/
 
 dist:
 	xterm -e git log --raw  &

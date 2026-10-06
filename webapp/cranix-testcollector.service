@@ -1,0 +1,23 @@
+[Unit]
+Description=CRANIX QA Test Result Collector
+Documentation=file:///usr/share/cranix/tests/README.md
+After=network.target
+
+[Service]
+Type=simple
+StateDirectory=cranix-testcollector
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /usr/share/cranix/tests/webapp/server.py \
+    --host 127.0.0.1 --port 8765 \
+    --plan-dir /usr/share/cranix/tests \
+    --static-dir /usr/share/cranix/tests/webapp/static \
+    --results-dir /var/lib/cranix-testcollector
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

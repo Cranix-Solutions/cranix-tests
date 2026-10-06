@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRANIX QA Result Collector</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">CRX</span>
+    <div>
+      <h1 data-i18n="appTitle">CRANIX QA Result Collector</h1>
+      <p class="sub" id="planMeta">Loading test plan…</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <select id="langSelect" class="select" aria-label="Language">
+      <option value="en">English</option>
+      <option value="de">Deutsch</option>
+    </select>
+    <button id="importBtn" class="btn" data-i18n="import">Import</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+    <div class="export-group">
+      <button class="btn" data-export="md" data-i18n="exportMd">Report (MD)</button>
+      <button class="btn" data-export="json" data-i18n="exportJson">JSON</button>
+      <button class="btn" data-export="csv" data-i18n="exportCsv">CSV</button>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <section id="runPanel" class="panel"></section>
+    <section id="progressPanel" class="panel"></section>
+    <section id="filterPanel" class="panel"></section>
+  </aside>
+  <main id="content" class="content">
+    <section id="envPanel"></section>
+    <section id="casesPanel"></section>
+  </main>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="/static/app.js" defer></script>
+</body>
+</html>

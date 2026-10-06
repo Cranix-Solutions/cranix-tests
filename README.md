@@ -23,6 +23,7 @@ All helpers are installed under `/usr/share/cranix/tests` and run from
 | `helper/` | Data generators and shared functions |
 | `datas/` | Import fixtures |
 | `tests/` | `cranix-full-test.sh` entry point |
+| `webapp/` | Result collector web app (see below) |
 
 ```bash
 # Run all setup phases in numbered order
@@ -30,6 +31,24 @@ All helpers are installed under `/usr/share/cranix/tests` and run from
 ```
 
 Counts can be overridden, e.g. `CLASS_COUNT=1 STUDENT_COUNT=3 TEACHER_COUNT=2`.
+
+## Result collector webapp
+
+`webapp/` contains a dependency-free Python app that turns the test plan into an
+interactive checklist and stores every run as a JSON file. It parses
+`QA-TESTPLAN.md` and `QA-TESTPLAN.de.md` at runtime, so the plan stays the single
+source of truth.
+
+```bash
+# Run from the repository
+python3 webapp/server.py --port 8765
+# open http://127.0.0.1:8765/
+```
+
+Installed under `/usr/share/cranix/tests/webapp`, it is started by the
+`cranix-testcollector` systemd unit (results in `/var/lib/cranix-testcollector`).
+Use `webapp/apache-cranix-testcollector.conf.example` to expose it to the test
+network. Parser tests: `python3 -m unittest webapp.test_parser`.
 
 ## Install
 
