@@ -34,8 +34,8 @@ Cephalix cloud internals, or hardware/network infrastructure.
 - Testing is **update-in-place**: the package(s) under test are installed on the
   running server, then the test cases below are executed.
 - Recommended: a **disposable/snapshot-capable** test server, because several
-  Tier 2 cases are destructive (delete users/rooms/devices, wipe class dirs,
-  reinstall services).
+  cases are destructive (delete users/rooms/devices, wipe class dirs, reinstall
+  services).
 - Test client: a machine on the school network with a current browser (Chrome/
   Firefox) and, for mobile cases, an iOS device or the browser's mobile/PWA mode.
 
@@ -102,12 +102,13 @@ export CLASS_COUNT=1 STUDENT_COUNT=3 TEACHER_COUNT=2
 ## 5. Tier definitions
 
 - **Tier 0 — Environment:** must always be executed before any other case.
-- **Tier 1 — Smoke:** the critical path. Execute after **every** package update.
-  Target duration ~1 hour. All Tier 1 cases must pass.
-- **Tier 2 — Extended:** deeper and destructive coverage. Execute before a
-  release or when a Tier 1 case fails and needs narrowing down. May take a
-  half day or more. This tier also contains the dedicated **Web GUI** catalog
-  (`WEB-`), which is executed in the application menu order.
+- **Tier 1 — Smoke:** the critical path plus the complete `cranix-base` and
+  `cranix-java` regression. Execute after **every** package update. All Tier 1
+  cases must pass; optional or conditional cases whose preconditions do not apply
+  are recorded as N/A. Target duration ~2 hours.
+- **Tier 2 — Frontend:** extended coverage of the Web GUI (`WEB-`, executed in
+  the application menu order) and the mobile/PWA app (`MOB-`). Execute before a
+  release or when a frontend case fails and needs narrowing down.
 
 Priority legend: **H** = high, **M** = medium, **L** = low.
 
@@ -278,7 +279,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### BASE-10 — User import edge cases
-- Tier: 2 | Package: cranix-base | Priority: M
+- Tier: 1 | Package: cranix-base | Priority: M
 - Preconditions: Test server (creates users).
 - Steps:
   1. Import `datas/import-utf8-test.csv` and verify umlauts/UTF-8 handling.
@@ -289,7 +290,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### BASE-11 — Filesystem and mail quota sync
-- Tier: 2 | Package: cranix-base | Priority: M
+- Tier: 1 | Package: cranix-base | Priority: M
 - Preconditions: Quotas enabled.
 - Steps:
   1. Set a quota with `crx_set_quota.sh`.
@@ -299,7 +300,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### BASE-12 — Room access and firewall
-- Tier: 2 | Package: cranix-base | Priority: H
+- Tier: 1 | Package: cranix-base | Priority: H
 - Preconditions: Room with devices exists.
 - Steps:
   1. Use `crx_manage_room_access.py` to deny/allow printing, login, portal,
@@ -311,7 +312,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### BASE-13 — DHCP configuration
-- Tier: 2 | Package: cranix-base | Priority: M
+- Tier: 1 | Package: cranix-base | Priority: M
 - Preconditions: DHCP service running.
 - Steps:
   1. Create/modify a room with DHCP parameters via API/GUI.
@@ -323,7 +324,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### BASE-14 — Certificates and password documents
-- Tier: 2 | Package: cranix-base | Priority: L
+- Tier: 1 | Package: cranix-base | Priority: L
 - Preconditions: --
 - Steps:
   1. Run `create_server_certificates.sh` (test CA/server/proxy).
@@ -334,7 +335,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### BASE-15 — Client control and wake-on-LAN
-- Tier: 2 | Package: cranix-base | Priority: M
+- Tier: 1 | Package: cranix-base | Priority: M
 - Preconditions: A running client with a valid MAC.
 - Steps:
   1. Send `open`, `close`, `reboot`, `shutdown`, `wol` via `crx_control_client.sh`.
@@ -343,7 +344,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### BASE-16 — Fileserver split / import tools (optional)
-- Tier: 2 | Package: cranix-base | Priority: L
+- Tier: 1 | Package: cranix-base | Priority: L
 - Preconditions: Disposable server.
 - Steps:
   1. Run `pack_import.sh` / `read_installed_software.py` against a minion.
@@ -438,7 +439,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### JAVA-09 — Two-factor authentication (if `CRX_2FA` enabled)
-- Tier: 2 | Package: cranix-java | Priority: M
+- Tier: 1 | Package: cranix-java | Priority: M
 - Preconditions: `/etc/sysconfig/CRX_2FA` exists; test user with `2fa.use`.
 - Steps:
   1. Log in → expect PIN prompt; `POST /2fas/sendpin` then `POST /2fas/checkpin`.
@@ -448,7 +449,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### JAVA-10 — Conditional resources present/absent
-- Tier: 2 | Package: cranix-java | Priority: M
+- Tier: 1 | Package: cranix-java | Priority: M
 - Preconditions: Control over `/etc/sysconfig/CRX_*` files.
 - Steps:
   1. With `CRX_MDM`, `CRX_PTM`, `CRX_CAL`, `CRX_ID` present, call their endpoints.
@@ -458,7 +459,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### JAVA-11 — Self-management endpoints
-- Tier: 2 | Package: cranix-java | Priority: M
+- Tier: 1 | Package: cranix-java | Priority: M
 - Preconditions: A normal user session and a registered device.
 - Steps:
   1. Call `/selfmanagement/me`, `/modify`, `/devices`, `/myFiles`, `/vpn/*`.
@@ -468,7 +469,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### JAVA-12 — Education / room control
-- Tier: 2 | Package: cranix-java | Priority: M
+- Tier: 1 | Package: cranix-java | Priority: M
 - Preconditions: Teacher session; room with devices.
 - Steps:
   1. Use `/education/rooms/{id}/{action}` (open/close/lock/logout/projector).
@@ -479,7 +480,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### JAVA-13 — Software installations and licenses
-- Tier: 2 | Package: cranix-java | Priority: M
+- Tier: 1 | Package: cranix-java | Priority: M
 - Preconditions: At least one software package available.
 - Steps:
   1. Create an installation/set and assign devices/rooms.
@@ -488,7 +489,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### JAVA-14 — Documents
-- Tier: 2 | Package: cranix-java | Priority: M
+- Tier: 1 | Package: cranix-java | Priority: M
 - Preconditions: A user with document rights.
 - Steps:
   1. Create a document, add versions, restore a version.
@@ -499,7 +500,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### JAVA-15 — Calendar, courses, PTM
-- Tier: 2 | Package: cranix-java | Priority: M
+- Tier: 1 | Package: cranix-java | Priority: M
 - Preconditions: `CRX_CAL` / `CRX_PTM` as applicable.
 - Steps:
   1. Create a calendar event; filter; sync.
@@ -509,7 +510,7 @@ the maintainer together with the environment table from section 2.1.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### JAVA-16 — System administration endpoints
-- Tier: 2 | Package: cranix-java | Priority: M
+- Tier: 1 | Package: cranix-java | Priority: M
 - Preconditions: Admin session.
 - Steps:
   1. Read `/system/status`, `/system/diskStatus`, `/system/services`.

@@ -35,7 +35,7 @@ Cephalix-Cloud-Interna sowie Hardware-/Netzwerkinfrastruktur.
 - Getestet wird **Update-in-place**: Das/die zu testende(n) Paket(e) werden auf
   dem laufenden Server installiert, danach werden die Testfälle ausgeführt.
 - Empfohlen: ein **disponibler/snapshot-fähiger** Testserver, da mehrere
-  Tier-2-Fälle destruktiv sind (Benutzer/Räume/Geräte löschen, Klassenverzeichnisse
+  Fälle destruktiv sind (Benutzer/Räume/Geräte löschen, Klassenverzeichnisse
   leeren, Dienste neu installieren).
 - Testclient: ein Rechner im Schulnetz mit aktuellem Browser (Chrome/Firefox)
   und für Mobile-Fälle ein iOS-Gerät oder der Mobile-/PWA-Modus des Browsers.
@@ -104,13 +104,14 @@ export CLASS_COUNT=1 STUDENT_COUNT=3 TEACHER_COUNT=2
 ## 5. Tier-Definitionen
 
 - **Tier 0 — Umgebung:** muss immer vor allen anderen Fällen ausgeführt werden.
-- **Tier 1 — Smoke:** der kritische Pfad. Nach **jedem** Paket-Update ausführen.
-  Zieldauer ca. 1 Stunde. Alle Tier-1-Fälle müssen bestehen.
-- **Tier 2 — Erweitert:** tiefergehende und destruktive Abdeckung. Vor einem
-  Release ausführen oder wenn ein Tier-1-Fall fehlschlägt und eingegrenzt werden
-  muss. Kann einen halben Tag oder länger dauern. Dieses Tier enthält außerdem
-  den dedizierten **Web-GUI**-Katalog (`WEB-`), der in der
-  Anwendungs-Menüreihenfolge ausgeführt wird.
+- **Tier 1 — Smoke:** der kritische Pfad plus die vollständige Regression von
+  `cranix-base` und `cranix-java`. Nach **jedem** Paket-Update ausführen. Alle
+  Tier-1-Fälle müssen bestehen; optionale oder bedingte Fälle, deren
+  Vorbedingungen nicht zutreffen, werden als N/A erfasst. Zieldauer ca. 2 Stunden.
+- **Tier 2 — Frontend:** erweiterte Abdeckung der Web-GUI (`WEB-`, ausgeführt in
+  der Anwendungs-Menüreihenfolge) und der Mobile-/PWA-App (`MOB-`). Vor einem
+  Release ausführen oder wenn ein Frontend-Fall fehlschlägt und eingegrenzt werden
+  muss.
 
 Prioritätslegende: **H** = hoch, **M** = mittel, **L** = niedrig.
 
@@ -284,7 +285,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### BASE-10 — Benutzerimport-Sonderfälle
-- Tier: 2 | Paket: cranix-base | Priorität: M
+- Tier: 1 | Paket: cranix-base | Priorität: M
 - Vorbedingungen: Testserver (erzeugt Benutzer).
 - Schritte:
   1. `datas/import-utf8-test.csv` importieren und Umlaut-/UTF-8-Behandlung prüfen.
@@ -295,7 +296,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### BASE-11 — Dateisystem- und Mail-Quota-Synchronisation
-- Tier: 2 | Paket: cranix-base | Priorität: M
+- Tier: 1 | Paket: cranix-base | Priorität: M
 - Vorbedingungen: Quotas aktiviert.
 - Schritte:
   1. Eine Quota mit `crx_set_quota.sh` setzen.
@@ -306,7 +307,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### BASE-12 — Raumzugriff und Firewall
-- Tier: 2 | Paket: cranix-base | Priorität: H
+- Tier: 1 | Paket: cranix-base | Priorität: H
 - Vorbedingungen: Raum mit Geräten vorhanden.
 - Schritte:
   1. Mit `crx_manage_room_access.py` Drucken, Login, Portal, Proxy und direktes
@@ -318,7 +319,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### BASE-13 — DHCP-Konfiguration
-- Tier: 2 | Paket: cranix-base | Priorität: M
+- Tier: 1 | Paket: cranix-base | Priorität: M
 - Vorbedingungen: DHCP-Dienst läuft.
 - Schritte:
   1. Einen Raum mit DHCP-Parametern via API/GUI anlegen/ändern.
@@ -330,7 +331,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### BASE-14 — Zertifikate und Passwortdokumente
-- Tier: 2 | Paket: cranix-base | Priorität: L
+- Tier: 1 | Paket: cranix-base | Priorität: L
 - Vorbedingungen: --
 - Schritte:
   1. `create_server_certificates.sh` ausführen (Test-CA/Server/Proxy).
@@ -341,7 +342,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### BASE-15 — Client-Steuerung und Wake-on-LAN
-- Tier: 2 | Paket: cranix-base | Priorität: M
+- Tier: 1 | Paket: cranix-base | Priorität: M
 - Vorbedingungen: Ein laufender Client mit gültiger MAC.
 - Schritte:
   1. `open`, `close`, `reboot`, `shutdown`, `wol` via `crx_control_client.sh` senden.
@@ -351,7 +352,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### BASE-16 — Fileserver-Split / Import-Tools (optional)
-- Tier: 2 | Paket: cranix-base | Priorität: L
+- Tier: 1 | Paket: cranix-base | Priorität: L
 - Vorbedingungen: Disponibler Server.
 - Schritte:
   1. `pack_import.sh` / `read_installed_software.py` gegen einen Minion ausführen.
@@ -447,7 +448,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### JAVA-09 — Zwei-Faktor-Authentifizierung (falls `CRX_2FA` aktiviert)
-- Tier: 2 | Paket: cranix-java | Priorität: M
+- Tier: 1 | Paket: cranix-java | Priorität: M
 - Vorbedingungen: `/etc/sysconfig/CRX_2FA` existiert; Testbenutzer mit `2fa.use`.
 - Schritte:
   1. Anmelden → PIN-Aufforderung erwartet; `POST /2fas/sendpin`, dann `POST /2fas/checkpin`.
@@ -457,7 +458,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### JAVA-10 — Bedingte Ressourcen vorhanden/nicht vorhanden
-- Tier: 2 | Paket: cranix-java | Priorität: M
+- Tier: 1 | Paket: cranix-java | Priorität: M
 - Vorbedingungen: Kontrolle über `/etc/sysconfig/CRX_*`-Dateien.
 - Schritte:
   1. Mit vorhandenen `CRX_MDM`, `CRX_PTM`, `CRX_CAL`, `CRX_ID` deren Endpunkte aufrufen.
@@ -467,7 +468,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### JAVA-11 — Self-Management-Endpunkte
-- Tier: 2 | Paket: cranix-java | Priorität: M
+- Tier: 1 | Paket: cranix-java | Priorität: M
 - Vorbedingungen: Normale Benutzersitzung und ein registriertes Gerät.
 - Schritte:
   1. `/selfmanagement/me`, `/modify`, `/devices`, `/myFiles`, `/vpn/*` aufrufen.
@@ -477,7 +478,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### JAVA-12 — Education / Raumsteuerung
-- Tier: 2 | Paket: cranix-java | Priorität: M
+- Tier: 1 | Paket: cranix-java | Priorität: M
 - Vorbedingungen: Lehrer-Sitzung; Raum mit Geräten.
 - Schritte:
   1. `/education/rooms/{id}/{action}` nutzen (open/close/lock/logout/projector).
@@ -488,7 +489,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### JAVA-13 — Software-Installationen und Lizenzen
-- Tier: 2 | Paket: cranix-java | Priorität: M
+- Tier: 1 | Paket: cranix-java | Priorität: M
 - Vorbedingungen: Mindestens ein Softwarepaket verfügbar.
 - Schritte:
   1. Eine Installation/ein Set erstellen und Geräten/Räumen zuweisen.
@@ -498,7 +499,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### JAVA-14 — Dokumente
-- Tier: 2 | Paket: cranix-java | Priorität: M
+- Tier: 1 | Paket: cranix-java | Priorität: M
 - Vorbedingungen: Ein Benutzer mit Dokumentrechten.
 - Schritte:
   1. Ein Dokument erstellen, Versionen hinzufügen, eine Version wiederherstellen.
@@ -509,7 +510,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### JAVA-15 — Kalender, Kurse, PTM
-- Tier: 2 | Paket: cranix-java | Priorität: M
+- Tier: 1 | Paket: cranix-java | Priorität: M
 - Vorbedingungen: `CRX_CAL` / `CRX_PTM` je nach Fall.
 - Schritte:
   1. Ein Kalenderereignis erstellen; filtern; syncen.
@@ -520,7 +521,7 @@ zurückgeben.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### JAVA-16 — System-Administrationsendpunkte
-- Tier: 2 | Paket: cranix-java | Priorität: M
+- Tier: 1 | Paket: cranix-java | Priorität: M
 - Vorbedingungen: Admin-Sitzung.
 - Schritte:
   1. `/system/status`, `/system/diskStatus`, `/system/services` lesen.

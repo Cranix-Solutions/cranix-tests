@@ -45,7 +45,7 @@ class PlanParserTest(unittest.TestCase):
         for case in self.plan["cases"]:
             tiers.setdefault(case["tier"], 0)
             tiers[case["tier"]] += 1
-        self.assertEqual(tiers, {0: 4, 1: 23, 2: 40})
+        self.assertEqual(tiers, {0: 4, 1: 38, 2: 25})
 
     def test_web_gui_catalog_order(self):
         web = [case["id"] for case in self.plan["cases"] if case["group"] == "WEB"]

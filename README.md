@@ -10,7 +10,8 @@ after updating the packages `cranix-base`, `cranix-java` and `cranix-web`.
 
 The plans are human-executed, checkbox-based regression tests. Tier 0 sets up
 the environment, Tier 1 is the smoke test to run after every package update, and
-Tier 2 is the extended coverage for releases.
+Tier 2 is the extended frontend coverage (Web GUI and mobile/PWA app) for
+releases.
 
 ## Test helpers
 
