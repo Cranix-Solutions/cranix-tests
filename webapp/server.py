@@ -495,11 +495,12 @@ class Handler(BaseHTTPRequestHandler):
                 "/sessions/byToken/" + quote(session["token"], safe=""),
                 token=session["token"],
             )
-            if status != 200 or not data:
+            if status in (401, 403):
                 self._drop_session(sid)
                 return None
-            session["acls"] = data.get("acls", session.get("acls", []))
-            session["fullName"] = data.get("fullName", session.get("fullName", ""))
+            if status == 200 and data:
+                session["acls"] = data.get("acls", session.get("acls", []))
+                session["fullName"] = data.get("fullName", session.get("fullName", ""))
             session["validated"] = now
         session["lastSeen"] = now
         return session

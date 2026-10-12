@@ -108,7 +108,9 @@ export CLASS_COUNT=1 STUDENT_COUNT=3 TEACHER_COUNT=2
   Zieldauer ca. 1 Stunde. Alle Tier-1-Fälle müssen bestehen.
 - **Tier 2 — Erweitert:** tiefergehende und destruktive Abdeckung. Vor einem
   Release ausführen oder wenn ein Tier-1-Fall fehlschlägt und eingegrenzt werden
-  muss. Kann einen halben Tag oder länger dauern.
+  muss. Kann einen halben Tag oder länger dauern. Dieses Tier enthält außerdem
+  den dedizierten **Web-GUI**-Katalog (`WEB-`), der in der
+  Anwendungs-Menüreihenfolge ausgeführt wird.
 
 Prioritätslegende: **H** = hoch, **M** = mittel, **L** = niedrig.
 
@@ -531,20 +533,29 @@ zurückgeben.
 
 ---
 
-### cranix-web GUI (`WEB-`) und Mobile-App (`MOB-`)
+### cranix-web GUI (`WEB-`)
+
+Dieser Katalog deckt nur die Web-GUI ab und folgt der Anwendungs-Menüreihenfolge
+aus `defAppPages` im Frontend (`auth.service.ts`). Die Fälle in der angegebenen
+Reihenfolge ausführen; die Menüeinträge sind: Customers, Institutes, Tickets,
+Calendar, Groups, Users, HWConfs, Rooms, Devices, Documents, Softwares, System,
+Security, Lessons, Profile, MyGroups, Informations. Jeder Fall wird mit einem
+Konto ausgeführt, das die in den Vorbedingungen genannte ACL besitzt; Einträge
+ohne passende ACL dürfen nicht im Menü erscheinen.
 
 #### WEB-01 — Login-Seite laden
-- Tier: 1 | Paket: cranix-web | Priorität: H
-- Vorbedingungen: Apache-Proxy konfiguriert.
+- Tier: 2 | Paket: cranix-web | Priorität: H
+- Vorbedingungen: Apache-Proxy konfiguriert; Test-Client-Browser.
 - Schritte:
   1. `https://admin.<domain>/` und die Schulportal-URL öffnen.
   2. Prüfen, dass der Institutname angezeigt wird.
+  3. Die Browser-Konsole öffnen und auf Fehler prüfen.
 - Erwartetes Ergebnis: Login-Seite rendert ohne Konsolenfehler; Servername
   angezeigt.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
 #### WEB-02 — Web-Login / Logout
-- Tier: 1 | Paket: cranix-web | Priorität: H
+- Tier: 2 | Paket: cranix-web | Priorität: H
 - Vorbedingungen: Admin-Zugangsdaten.
 - Schritte:
   1. Als Admin anmelden.
@@ -554,129 +565,197 @@ zurückgeben.
   Sitzung; falsches Passwort zeigt einen Fehler und meldet nicht an.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-03 — Menü gefiltert nach Rolle/ACL
-- Tier: 1 | Paket: cranix-web | Priorität: H
+#### WEB-03 — Menüreihenfolge und ACL-Filterung
+- Tier: 2 | Paket: cranix-web | Priorität: H
 - Vorbedingungen: Admin-, Lehrer-, Schülerkonten.
 - Schritte:
-  1. Mit jeder Rolle anmelden und das Seitenmenü prüfen.
-  2. Als Schüler eine Admin-URL direkt öffnen.
-- Erwartetes Ergebnis: Menü zeigt nur erlaubte Einträge; Direktzugriff wird vom
-  Route-Guard blockiert.
+  1. Als Admin anmelden und prüfen, dass das Seitenmenü in der Reihenfolge
+     erscheint: Customers, Institutes, Tickets, Calendar, Groups, Users, HWConfs,
+     Rooms, Devices, Documents, Softwares, System, Security, Lessons, Profile,
+     MyGroups, Informations.
+  2. Als Lehrer und als Schüler anmelden und das Seitenmenü prüfen.
+  3. Als Schüler eine Admin-URL direkt öffnen.
+- Erwartetes Ergebnis: Einträge erscheinen in dieser Reihenfolge und nur bei
+  passender ACL; Direktzugriff wird vom Route-Guard blockiert.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-04 — Benutzerverwaltung
-- Tier: 1 | Paket: cranix-web | Priorität: H
-- Vorbedingungen: Admin-Sitzung.
+#### WEB-04 — Customers (Cephalix)
+- Tier: 2 | Paket: cranix-web | Priorität: L
+- Vorbedingungen: Cephalix-Anbindung und ACL `customer.manage`; auf einem reinen
+  CRANIX-Server ist der Eintrag ausgeblendet und der Fall voraussichtlich N/A.
 - Schritte:
-  1. Benutzer öffnen; suchen, anlegen, bearbeiten und löschen.
-  2. Einen Benutzerimport ausführen und die Importliste prüfen.
-- Erwartetes Ergebnis: Änderungen werden korrekt gespeichert und
-  serverseitig widergespiegelt.
+  1. Customers öffnen; einen Kunden suchen und die Detailseite öffnen.
+  2. Einen Kunden anlegen und bearbeiten.
+- Erwartetes Ergebnis: Bei angebundenem Cephalix rendern Liste und Detailseite
+  und Änderungen werden gespeichert; andernfalls fehlt der Menüeintrag (N/A).
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-05 — Gruppen / Klassen
-- Tier: 1 | Paket: cranix-web | Priorität: H
-- Vorbedingungen: Admin-Sitzung.
+#### WEB-05 — Institutes (Cephalix)
+- Tier: 2 | Paket: cranix-web | Priorität: L
+- Vorbedingungen: Cephalix-Anbindung und ACL `cephalix.manage`; auf einem reinen
+  CRANIX-Server ist der Eintrag ausgeblendet und der Fall voraussichtlich N/A.
+- Schritte:
+  1. Institutes öffnen; die Liste und eine Detailseite ansehen.
+  2. Eine Institut-Aktion auslösen (z. B. Aktualisieren/Neuladen).
+- Erwartetes Ergebnis: Bei angebundenem Cephalix rendern Liste und Detailseite
+  und die Aktion läuft; andernfalls fehlt der Menüeintrag (N/A).
+- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
+
+#### WEB-06 — Tickets (Cephalix)
+- Tier: 2 | Paket: cranix-web | Priorität: L
+- Vorbedingungen: Cephalix-Anbindung und ACL `cephalix.ticket`; auf einem reinen
+  CRANIX-Server ist der Eintrag ausgeblendet und der Fall voraussichtlich N/A.
+- Schritte:
+  1. Tickets öffnen; ein Ticket öffnen.
+  2. Den Status ändern und einen Kommentar hinzufügen.
+- Erwartetes Ergebnis: Bei angebundenem Cephalix öffnet das Ticket und die
+  Änderung wird gespeichert; andernfalls fehlt der Menüeintrag (N/A).
+- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
+
+#### WEB-07 — Calendar
+- Tier: 2 | Paket: cranix-web | Priorität: M
+- Vorbedingungen: Ein Konto mit `calendar.manage`, `calendar.use` oder
+  `calendar.read`.
+- Schritte:
+  1. Calendar öffnen und zwischen Tages-/Wochen-/Monatsansicht wechseln.
+  2. Einen Termin anlegen und bearbeiten.
+- Erwartetes Ergebnis: Kalender rendert; der Termin wird gespeichert und
+  angezeigt.
+- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
+
+#### WEB-08 — Gruppen / Klassen
+- Tier: 2 | Paket: cranix-web | Priorität: H
+- Vorbedingungen: Admin-Sitzung (`group.manage`).
 - Schritte:
   1. Gruppen öffnen; eine Klasse anlegen; Mitglieder hinzufügen/entfernen.
+  2. Die Klassendetailseite öffnen und das Gruppenverzeichnis prüfen.
 - Erwartetes Ergebnis: Mitgliedschaft und Klassenverzeichnisse aktualisieren
   korrekt.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-06 — Räume und Zugriffskontrolle
-- Tier: 1 | Paket: cranix-web | Priorität: H
-- Vorbedingungen: Ein Raum mit Geräten.
+#### WEB-09 — Benutzer
+- Tier: 2 | Paket: cranix-web | Priorität: H
+- Vorbedingungen: Admin-Sitzung (`user.manage`).
+- Schritte:
+  1. Benutzer öffnen; suchen, anlegen, bearbeiten und löschen.
+  2. Einen Benutzerimport ausführen und die Importliste prüfen.
+- Erwartetes Ergebnis: Änderungen werden korrekt gespeichert und serverseitig
+  widergespiegelt.
+- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
+
+#### WEB-10 — HWConfs
+- Tier: 2 | Paket: cranix-web | Priorität: M
+- Vorbedingungen: Admin-Sitzung (`hwconf.manage`).
+- Schritte:
+  1. HWConfs öffnen; eine Hardware-Konfiguration öffnen.
+  2. Eine Einstellung bearbeiten und speichern.
+- Erwartetes Ergebnis: Die Konfiguration wird gespeichert und via API
+  widergespiegelt.
+- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
+
+#### WEB-11 — Räume und Zugriffskontrolle
+- Tier: 2 | Paket: cranix-web | Priorität: H
+- Vorbedingungen: Ein Raum mit Geräten (`room.manage`).
 - Schritte:
   1. Räume öffnen; Geräte und verfügbare IPs prüfen.
   2. Zugriffsstatus (Drucken/Login/Internet/Portal) für den Raum ändern.
 - Erwartetes Ergebnis: Zugriffsumschaltungen werden gespeichert und wirksam.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-07 — Geräte
-- Tier: 1 | Paket: cranix-web | Priorität: H
-- Vorbedingungen: Ein Gerät existiert.
+#### WEB-12 — Geräte und Drucker
+- Tier: 2 | Paket: cranix-web | Priorität: H
+- Vorbedingungen: Ein Gerät und ein Drucker existieren (`device.manage`).
 - Schritte:
-  1. Geräte öffnen; anzeigen, Homework-Konfiguration bearbeiten und eine Aktion anwenden.
-- Erwartetes Ergebnis: Gerätedaten und Aktionen funktionieren.
+  1. Geräte öffnen; ein Gerät anzeigen, die Homework-Konfiguration bearbeiten
+     und eine Aktion anwenden.
+  2. Die Druckeransicht öffnen; aktivieren/deaktivieren, zurücksetzen und Treiber
+     setzen.
+- Erwartetes Ergebnis: Gerätedaten und Aktionen funktionieren;
+  Druckerstatusänderungen spiegeln sich in CUPS wider.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-08 — Drucker
-- Tier: 1 | Paket: cranix-web | Priorität: M
-- Vorbedingungen: Ein Drucker existiert.
+#### WEB-13 — Dokumente
+- Tier: 2 | Paket: cranix-web | Priorität: M
+- Vorbedingungen: Ein Benutzer mit `documents.search`.
 - Schritte:
-  1. Drucker öffnen; aktivieren/deaktivieren, zurücksetzen und Treiber setzen.
-- Erwartetes Ergebnis: Druckerstatusänderungen spiegeln sich in CUPS wider.
+  1. Ordner/Dokument erstellen; Inhalt hochladen; eine Version hinzufügen; Rechte
+     setzen.
+- Erwartetes Ergebnis: Dokumentbaum, Versionen und Rechte funktionieren in der
+  GUI.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-09 — Systemstatus und Dienste
-- Tier: 1 | Paket: cranix-web | Priorität: M
-- Vorbedingungen: Admin-Sitzung.
+#### WEB-14 — Softwares
+- Tier: 2 | Paket: cranix-web | Priorität: M
+- Vorbedingungen: Softwarepakete heruntergeladen (`software.manage`).
+- Schritte:
+  1. Softwares → Status/Packages/Sets öffnen; ein Set erstellen; einem Raum
+     zuweisen.
+- Erwartetes Ergebnis: Sets und Zuweisungen werden gespeichert und via API
+  widergespiegelt.
+- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
+
+#### WEB-15 — System
+- Tier: 2 | Paket: cranix-web | Priorität: M
+- Vorbedingungen: Admin-Sitzung (`system.status`).
 - Schritte:
   1. System → Status und Dienste öffnen.
 - Erwartetes Ergebnis: Status/Disk/Dienste rendern mit korrekten Werten.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-10 — Profil "Myself" und Passwortänderung
-- Tier: 1 | Paket: cranix-web | Priorität: H
-- Vorbedingungen: Ein Benutzer, der das Passwort ändern darf.
-- Schritte:
-  1. Profil → Myself öffnen; das Passwort ändern; mit dem neuen Passwort anmelden.
-- Erwartetes Ergebnis: Passwortänderung erfolgreich und neues Passwort
-  funktioniert.
-- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
-
-#### WEB-11 — Softwarepakete, Sets und Lizenzen
+#### WEB-16 — Sicherheit
 - Tier: 2 | Paket: cranix-web | Priorität: M
-- Vorbedingungen: Softwarepakete heruntergeladen.
+- Vorbedingungen: `system.firewall` oder `system.proxy`.
 - Schritte:
-  1. Softwares → Status/Packages/Sets öffnen; ein Set erstellen; einem Raum zuweisen.
-- Erwartetes Ergebnis: Sets und Zuweisungen werden gespeichert und via API
-  widergespiegelt.
-- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
-
-#### WEB-12 — Sicherheitsseiten
-- Tier: 2 | Paket: cranix-web | Priorität: M
-- Vorbedingungen: Admin-Sitzung.
-- Schritte:
-  1. Security → Firewall, Proxy, Unbound, Access, Access-Log öffnen; eine Änderung vornehmen.
+  1. Security → Firewall, Proxy, Unbound, Access, Access-Log öffnen; eine
+     Änderung vornehmen.
 - Erwartetes Ergebnis: Änderungen werden angewendet und sind serverseitig
   sichtbar.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-13 — Dokumente
+#### WEB-17 — Lessons / Unterricht
 - Tier: 2 | Paket: cranix-web | Priorität: M
-- Vorbedingungen: Ein Benutzer mit Dokumentrechten.
+- Vorbedingungen: Lehrer-Sitzung; `challenge.manage` für die Challenges-Ansicht.
 - Schritte:
-  1. Ordner/Dokument erstellen; Inhalt hochladen; eine Version hinzufügen; Rechte setzen.
-- Erwartetes Ergebnis: Dokumentbaum, Versionen und Rechte funktionieren in der
-  GUI.
+  1. Lessons öffnen; mit `challenge.manage` muss standardmäßig
+     `lessons/challenges` geöffnet werden, sonst `lessons/tests`.
+  2. Tests, Challenges, Room control, Courses und PTM öffnen und in jedem Tab
+     eine Erstellen-/Bearbeiten-Aktion ausführen.
+- Erwartetes Ergebnis: Der richtige Standard-Tab wird gewählt; jeder Tab
+  funktioniert; Raumsteuerung erreicht die Geräte.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-14 — Meine Gruppen (Lehrer)
-- Tier: 2 | Paket: cranix-web | Priorität: M
-- Vorbedingungen: Lehrer mit Klassen.
+#### WEB-18 — Profil
+- Tier: 2 | Paket: cranix-web | Priorität: H
+- Vorbedingungen: Ein Benutzer, der das Passwort ändern darf (`permitall`;
+  `2fa.use` für den 2FA-Tab).
 - Schritte:
-  1. Meine Gruppen öffnen; Mitglieder anzeigen; Anwesenheit erfassen; Notiz/Note hinzufügen.
+  1. Profil → Myself öffnen; das Passwort ändern und mit dem neuen anmelden.
+  2. Die übrigen Profil-Tabs öffnen (meine Dateien, mein Gerät, 2FA falls
+     aktiviert).
+- Erwartetes Ergebnis: Passwortänderung erfolgreich und die Tabs rendern
+  korrekt.
+- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
+
+#### WEB-19 — Meine Gruppen (Lehrer)
+- Tier: 2 | Paket: cranix-web | Priorität: M
+- Vorbedingungen: Lehrer mit Klassen (`education.group`).
+- Schritte:
+  1. Meine Gruppen öffnen; Mitglieder anzeigen; Anwesenheit erfassen;
+     Notiz/Note hinzufügen.
 - Erwartetes Ergebnis: Lehrer sieht nur eigene Klassen; Änderungen werden
   gespeichert.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
 
-#### WEB-15 — Education / Unterricht
-- Tier: 2 | Paket: cranix-web | Priorität: M
-- Vorbedingungen: Lehrer-Sitzung.
-- Schritte:
-  1. Lessons → Tests, Challenges, Room control, Courses, PTM öffnen.
-  2. In jedem Tab eine Erstellen-/Bearbeiten-Aktion ausführen.
-- Erwartetes Ergebnis: Jeder Tab funktioniert; Raumsteuerung erreicht die Geräte.
-- Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
-
-#### WEB-16 — Informationen / Ankündigungen
+#### WEB-20 — Informationen
 - Tier: 2 | Paket: cranix-web | Priorität: L
-- Vorbedingungen: Admin-Sitzung.
+- Vorbedingungen: Admin-Sitzung (`permitall`).
 - Schritte:
-  1. Eine Ankündigung und eine Aufgabe erstellen; als gesehen markieren; Antworten ansehen.
+  1. Eine Ankündigung und eine Aufgabe erstellen; als gesehen markieren;
+     Antworten ansehen.
 - Erwartetes Ergebnis: Inhalte erstellt und für die Zielgruppe sichtbar.
 - Ergebnis: [ ] Bestanden [ ] Fehlgeschlagen [ ] N/A   Notizen: ______
+
+### Mobile-App (`MOB-`)
 
 #### MOB-01 — Mobile-Login und gespeicherte Server
 - Tier: 1 | Paket: cranix-web | Priorität: H

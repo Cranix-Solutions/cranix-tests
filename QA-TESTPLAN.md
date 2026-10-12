@@ -106,7 +106,8 @@ export CLASS_COUNT=1 STUDENT_COUNT=3 TEACHER_COUNT=2
   Target duration ~1 hour. All Tier 1 cases must pass.
 - **Tier 2 — Extended:** deeper and destructive coverage. Execute before a
   release or when a Tier 1 case fails and needs narrowing down. May take a
-  half day or more.
+  half day or more. This tier also contains the dedicated **Web GUI** catalog
+  (`WEB-`), which is executed in the application menu order.
 
 Priority legend: **H** = high, **M** = medium, **L** = low.
 
@@ -520,19 +521,28 @@ the maintainer together with the environment table from section 2.1.
 
 ---
 
-### cranix-web GUI (`WEB-`) and mobile app (`MOB-`)
+### cranix-web GUI (`WEB-`)
+
+This catalog covers the Web GUI only and follows the application menu order
+defined by `defAppPages` in the frontend (`auth.service.ts`). Execute the cases
+in the order given; the menu entries are: Customers, Institutes, Tickets,
+Calendar, Groups, Users, HWConfs, Rooms, Devices, Documents, Softwares, System,
+Security, Lessons, Profile, MyGroups, Informations. Each case is executed with
+an account holding the ACL named in the preconditions; entries without a matching
+ACL must not appear in the menu.
 
 #### WEB-01 — Load login page
-- Tier: 1 | Package: cranix-web | Priority: H
-- Preconditions: Apache proxy configured.
+- Tier: 2 | Package: cranix-web | Priority: H
+- Preconditions: Apache proxy configured; test client browser.
 - Steps:
   1. Open `https://admin.<domain>/` and the school portal URL.
   2. Check the institute name is displayed.
+  3. Open the browser console and check for errors.
 - Expected result: Login page renders without console errors; server name shown.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### WEB-02 — Web login / logout
-- Tier: 1 | Package: cranix-web | Priority: H
+- Tier: 2 | Package: cranix-web | Priority: H
 - Preconditions: Admin credentials.
 - Steps:
   1. Log in as admin.
@@ -542,122 +552,182 @@ the maintainer together with the environment table from section 2.1.
   session; wrong password shows an error and does not log in.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
-#### WEB-03 — Menu filtered by role/ACL
-- Tier: 1 | Package: cranix-web | Priority: H
+#### WEB-03 — Menu order and ACL filtering
+- Tier: 2 | Package: cranix-web | Priority: H
 - Preconditions: Admin, teacher, student accounts.
 - Steps:
-  1. Log in with each role and inspect the side menu.
-  2. Try to open an admin URL directly as a student.
-- Expected result: Menu shows only allowed entries; direct access is blocked by
-  the route guard.
+  1. Log in as admin and confirm the side menu appears in the order: Customers,
+     Institutes, Tickets, Calendar, Groups, Users, HWConfs, Rooms, Devices,
+     Documents, Softwares, System, Security, Lessons, Profile, MyGroups,
+     Informations.
+  2. Log in as teacher and as student and inspect the side menu.
+  3. Try to open an admin URL directly as a student.
+- Expected result: Entries appear in that order and only when the matching ACL
+  is held; direct access is blocked by the route guard.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
-#### WEB-04 — Users management
-- Tier: 1 | Package: cranix-web | Priority: H
-- Preconditions: Admin session.
+#### WEB-04 — Customers (Cephalix)
+- Tier: 2 | Package: cranix-web | Priority: L
+- Preconditions: Cephalix connection and `customer.manage` ACL; on a plain
+  CRANIX server the entry is hidden and this case is expected N/A.
+- Steps:
+  1. Open Customers; search a customer and open its detail page.
+  2. Create and edit a customer.
+- Expected result: If Cephalix is connected the list and the detail page render
+  and edits save; otherwise the menu entry is absent (N/A).
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-05 — Institutes (Cephalix)
+- Tier: 2 | Package: cranix-web | Priority: L
+- Preconditions: Cephalix connection and `cephalix.manage` ACL; on a plain
+  CRANIX server the entry is hidden and this case is expected N/A.
+- Steps:
+  1. Open Institutes; view the list and a detail page.
+  2. Trigger one institute action (e.g. refresh/reload).
+- Expected result: If Cephalix is connected the list and the detail page render
+  and the action runs; otherwise the menu entry is absent (N/A).
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-06 — Tickets (Cephalix)
+- Tier: 2 | Package: cranix-web | Priority: L
+- Preconditions: Cephalix connection and `cephalix.ticket` ACL; on a plain
+  CRANIX server the entry is hidden and this case is expected N/A.
+- Steps:
+  1. Open Tickets; open a ticket.
+  2. Change its status and add a comment.
+- Expected result: If Cephalix is connected the ticket opens and the change
+  saves; otherwise the menu entry is absent (N/A).
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-07 — Calendar
+- Tier: 2 | Package: cranix-web | Priority: M
+- Preconditions: An account with `calendar.manage`, `calendar.use` or
+  `calendar.read`.
+- Steps:
+  1. Open Calendar and switch between day/week/month views.
+  2. Create an appointment and edit it.
+- Expected result: Calendar renders and the appointment is saved and visible.
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-08 — Groups / classes
+- Tier: 2 | Package: cranix-web | Priority: H
+- Preconditions: Admin session (`group.manage`).
+- Steps:
+  1. Open Groups; create a class; add and remove members.
+  2. Open the class detail and check the group directory.
+- Expected result: Membership and class dirs update correctly.
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-09 — Users
+- Tier: 2 | Package: cranix-web | Priority: H
+- Preconditions: Admin session (`user.manage`).
 - Steps:
   1. Open Users; search, create, edit and delete a user.
   2. Run a user import and check the import list.
 - Expected result: Changes save correctly and are reflected on the server.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
-#### WEB-05 — Groups / classes
-- Tier: 1 | Package: cranix-web | Priority: H
-- Preconditions: Admin session.
+#### WEB-10 — HWConfs
+- Tier: 2 | Package: cranix-web | Priority: M
+- Preconditions: Admin session (`hwconf.manage`).
 - Steps:
-  1. Open Groups; create a class; add/remove members.
-- Expected result: Membership and class dirs update correctly.
+  1. Open HWConfs; open a hardware configuration.
+  2. Edit a setting and save it.
+- Expected result: The configuration saves and is reflected via the API.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
-#### WEB-06 — Rooms and access control
-- Tier: 1 | Package: cranix-web | Priority: H
-- Preconditions: A room with devices.
+#### WEB-11 — Rooms and access control
+- Tier: 2 | Package: cranix-web | Priority: H
+- Preconditions: A room with devices (`room.manage`).
 - Steps:
   1. Open Rooms; view devices and available IPs.
   2. Change access status (printing/login/internet/portal) for the room.
 - Expected result: Access toggles save and take effect.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
-#### WEB-07 — Devices
-- Tier: 1 | Package: cranix-web | Priority: H
-- Preconditions: A device exists.
+#### WEB-12 — Devices and printers
+- Tier: 2 | Package: cranix-web | Priority: H
+- Preconditions: A device and a printer exist (`device.manage`).
 - Steps:
-  1. Open Devices; view, edit homework config, and apply an action.
-- Expected result: Device data and actions work.
-- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
-
-#### WEB-08 — Printers
-- Tier: 1 | Package: cranix-web | Priority: M
-- Preconditions: A printer exists.
-- Steps:
-  1. Open Printers; enable/disable, reset and set driver.
-- Expected result: Printer state changes are reflected in CUPS.
-- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
-
-#### WEB-09 — System status and services
-- Tier: 1 | Package: cranix-web | Priority: M
-- Preconditions: Admin session.
-- Steps:
-  1. Open System → Status and Services.
-- Expected result: Status/disk/services render with correct values.
-- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
-
-#### WEB-10 — Profile "Myself" and password change
-- Tier: 1 | Package: cranix-web | Priority: H
-- Preconditions: A user able to change password.
-- Steps:
-  1. Open Profile → Myself; change the password; log in with the new password.
-- Expected result: Password change succeeds and new password works.
-- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
-
-#### WEB-11 — Software packages, sets and licenses
-- Tier: 2 | Package: cranix-web | Priority: M
-- Preconditions: Software packages downloaded.
-- Steps:
-  1. Open Softwares → Status/Packages/Sets; create a set; assign to a room.
-- Expected result: Sets and assignments save and are reflected via API.
-- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
-
-#### WEB-12 — Security pages
-- Tier: 2 | Package: cranix-web | Priority: M
-- Preconditions: Admin session.
-- Steps:
-  1. Open Security → Firewall, Proxy, Unbound, Access, Access-Log; make a change.
-- Expected result: Changes apply and are visible on the server.
+  1. Open Devices; view a device, edit its homework configuration and apply an
+     action.
+  2. Open the printer view; enable/disable, reset and set the driver.
+- Expected result: Device data and actions work; printer state changes are
+  reflected in CUPS.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
 #### WEB-13 — Documents
 - Tier: 2 | Package: cranix-web | Priority: M
-- Preconditions: A user with document rights.
+- Preconditions: A user with `documents.search`.
 - Steps:
   1. Create a folder/document; upload content; add a version; set rights.
 - Expected result: Document tree, versions and rights work in the GUI.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
-#### WEB-14 — My groups (teacher)
+#### WEB-14 — Softwares
 - Tier: 2 | Package: cranix-web | Priority: M
-- Preconditions: Teacher with classes.
+- Preconditions: Software packages downloaded (`software.manage`).
+- Steps:
+  1. Open Softwares → Status/Packages/Sets; create a set; assign it to a room.
+- Expected result: Sets and assignments save and are reflected via API.
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-15 — System
+- Tier: 2 | Package: cranix-web | Priority: M
+- Preconditions: Admin session (`system.status`).
+- Steps:
+  1. Open System → Status and Services.
+- Expected result: Status/disk/services render with correct values.
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-16 — Security
+- Tier: 2 | Package: cranix-web | Priority: M
+- Preconditions: `system.firewall` or `system.proxy`.
+- Steps:
+  1. Open Security → Firewall, Proxy, Unbound, Access, Access-Log; make a
+     change.
+- Expected result: Changes apply and are visible on the server.
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-17 — Lessons / Education
+- Tier: 2 | Package: cranix-web | Priority: M
+- Preconditions: Teacher session; `challenge.manage` for the challenges view.
+- Steps:
+  1. Open Lessons; with `challenge.manage` it must default to
+     `lessons/challenges`, otherwise to `lessons/tests`.
+  2. Open Tests, Challenges, Room control, Courses and PTM and perform one
+     create/edit action in each.
+- Expected result: The correct default tab is chosen; each tab functions; room
+  control reaches the devices.
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-18 — Profile
+- Tier: 2 | Package: cranix-web | Priority: H
+- Preconditions: A user able to change the password (`permitall`; `2fa.use` for
+  the 2FA tab).
+- Steps:
+  1. Open Profile → Myself; change the password and log in with the new one.
+  2. Open the remaining Profile tabs (my files, my device, 2FA if enabled).
+- Expected result: Password change succeeds and the tabs render correctly.
+- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+#### WEB-19 — My groups (teacher)
+- Tier: 2 | Package: cranix-web | Priority: M
+- Preconditions: Teacher with classes (`education.group`).
 - Steps:
   1. Open My groups; view members; record attendance; add a note/grade.
 - Expected result: Teacher sees only own classes; changes save.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
 
-#### WEB-15 — Education / lessons
-- Tier: 2 | Package: cranix-web | Priority: M
-- Preconditions: Teacher session.
-- Steps:
-  1. Open Lessons → Tests, Challenges, Room control, Courses, PTM.
-  2. Perform one create/edit action in each tab.
-- Expected result: Each tab functions; room control reaches devices.
-- Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
-
-#### WEB-16 — Informations / announcements
+#### WEB-20 — Informations
 - Tier: 2 | Package: cranix-web | Priority: L
-- Preconditions: Admin session.
+- Preconditions: Admin session (`permitall`).
 - Steps:
   1. Create an announcement and a task; mark as seen; view responses.
 - Expected result: Content created and visible to the target audience.
 - Result: [ ] Pass [ ] Fail [ ] N/A   Notes: ______
+
+### Mobile app (`MOB-`)
 
 #### MOB-01 — Mobile login and saved servers
 - Tier: 1 | Package: cranix-web | Priority: H

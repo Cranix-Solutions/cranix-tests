@@ -26,7 +26,7 @@ class PlanParserTest(unittest.TestCase):
         cls.cases = {case["id"]: case for case in cls.plan["cases"]}
 
     def test_case_count(self):
-        self.assertEqual(len(self.plan["cases"]), 63)
+        self.assertEqual(len(self.plan["cases"]), 67)
 
     def test_ids_unique(self):
         ids = [case["id"] for case in self.plan["cases"]]
@@ -45,7 +45,16 @@ class PlanParserTest(unittest.TestCase):
         for case in self.plan["cases"]:
             tiers.setdefault(case["tier"], 0)
             tiers[case["tier"]] += 1
-        self.assertEqual(tiers, {0: 4, 1: 33, 2: 26})
+        self.assertEqual(tiers, {0: 4, 1: 23, 2: 40})
+
+    def test_web_gui_catalog_order(self):
+        web = [case["id"] for case in self.plan["cases"] if case["group"] == "WEB"]
+        self.assertEqual(
+            web, ["WEB-{:02d}".format(n) for n in range(1, 21)]
+        )
+        for case in self.plan["cases"]:
+            if case["group"] == "WEB":
+                self.assertEqual(case["tier"], 2, case["id"])
 
     def test_language_merge(self):
         env01 = self.cases["ENV-01"]

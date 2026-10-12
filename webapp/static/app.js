@@ -519,12 +519,21 @@
   }
 
   function renderFilters() {
-    var tierOptions = [
-      '<option value="all">' + esc(t("allTiers")) + "</option>",
-      '<option value="0">Tier 0</option>',
-      '<option value="1">Tier 1</option>',
-      '<option value="2">Tier 2</option>'
-    ].join("");
+    var tiers = [];
+    plan.cases.forEach(function (testCase) {
+      if (tiers.indexOf(testCase.tier) === -1) tiers.push(testCase.tier);
+    });
+    tiers.sort(function (a, b) {
+      return a - b;
+    });
+
+    var tierOptions = ['<option value="all">' + esc(t("allTiers")) + "</option>"]
+      .concat(
+        tiers.map(function (tier) {
+          return '<option value="' + esc(tier) + '">Tier ' + esc(tier) + "</option>";
+        })
+      )
+      .join("");
 
     var groupOptions =
       '<option value="all">' +
