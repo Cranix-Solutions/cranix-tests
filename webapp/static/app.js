@@ -17,7 +17,6 @@
       selectRun: "Run",
       noRuns: "No test runs yet.",
       createFirst: "Create the first test run to start collecting results.",
-      namePrompt: "Tester name for the new run:",
       progress: "Progress",
       passed: "Passed",
       failed: "Failed",
@@ -84,7 +83,6 @@
       selectRun: "Lauf",
       noRuns: "Noch keine Testläufe.",
       createFirst: "Ersten Testlauf anlegen, um Ergebnisse zu erfassen.",
-      namePrompt: "Name des Testers für den neuen Lauf:",
       progress: "Fortschritt",
       passed: "Bestanden",
       failed: "Fehlgeschlagen",
@@ -836,12 +834,11 @@
   }
 
   function createRun() {
-    var name = window.prompt(t("namePrompt"), "");
-    if (name === null) return;
+    var name = (currentUser && (currentUser.fullName || currentUser.username)) || "";
     api("testapi/runs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tester: name.trim(), language: lang })
+      body: JSON.stringify({ tester: name, language: lang })
     }).then(function (created) {
       return refreshRuns().then(function () {
         return openRun(created.id);
